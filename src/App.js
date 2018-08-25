@@ -28,7 +28,7 @@ class App extends Component {
                     fusoHorario:undefined,
                     horarioLocal:undefined,
                     area:undefined,
-                    centroid:undefined
+                    labelNdvi:undefined
     };    
     this.handleCheckPontoAtual = this.handleCheckPontoAtual.bind(this);
     this.handleCheckNdvi = this.handleCheckNdvi.bind(this);
@@ -42,17 +42,14 @@ class App extends Component {
     .then(res => res.json())
     .then(
       (result) => {
-        console.log(result)
         this.setState({
           horarioLocal: result.timestamp,
-          fusoHorario: result.provider_scene
+          fusoHorario: result.provider_scene,
+          area: result.bounds
         });
       },
       (error) => {
-        this.setState({
-          isLoaded: true,
-          error
-        });
+        console.log(error)
       }
     )
 
@@ -114,7 +111,26 @@ class App extends Component {
       const point = new Point(evt.coordinate);
       const feature = new Feature(point);      
       source.addFeature(feature);   
-      me.setState({labelPontoSelecionado:point.getCoordinates().toString()});
+      const labelPontoSelecionado = point.getCoordinates().toString();
+      me.setState({labelPontoSelecionado:labelPontoSelecionado});
+      const url = 'http://127.0.0.1:5000/ndvi?param='+labelPontoSelecionado;
+      fetch(url)
+      .then(res => res.json())
+      .then(
+        (result) => {
+          me.setState({
+            labelNdvi: result
+          });
+        },
+        (error) => {
+          me.setState({
+            labelNdvi: ''
+          });
+        }
+      )
+
+
+
     });
 
     this.setState({
@@ -149,6 +165,7 @@ class App extends Component {
     const source = this.state.sourcePontoAtual;
     source.clear();
     this.setState({labelPontoSelecionado:'Nenhum'});
+    this.setState({labelNdvi:''});
   }
 
   render() {
@@ -170,14 +187,13 @@ class App extends Component {
               <p>Informações da cena</p>
               <p>Fuso Horário : {this.state.fusoHorario}</p>
               <p>Horário Local: {this.state.horarioLocal}</p>              
-              <p>Área         : {this.state.area}</p>
-              <p>Centróid     : {this.state.centroid}</p>
+              <p>Área         : {this.state.area}</p>  
             </div>
             <div className="column">
               <p>Ponto Selecionado</p>
               <p>{this.state.labelPontoSelecionado}</p>
               <p>Ndvi</p>
-              <p>{this.state.labelPontoSelecionado}</p>
+              <p>{this.state.labelNdvi}</p>
               <button className="btn btn-default" onClick={this.handleClickLimparPontoSelecionado} >Limpar ponto selecionado</button>            
             </div>
           </div> 
