@@ -28,7 +28,8 @@ class App extends Component {
                     fusoHorario:undefined,
                     horarioLocal:undefined,
                     area:undefined,
-                    labelNdvi:undefined
+                    labelNdvi:undefined,
+                    histograma:undefined
     };    
     this.handleCheckPontoAtual = this.handleCheckPontoAtual.bind(this);
     this.handleCheckNdvi = this.handleCheckNdvi.bind(this);
@@ -38,7 +39,9 @@ class App extends Component {
 
   componentDidMount(){
 
-    fetch('http://127.0.0.1:5000/inf')
+    const backend = this.state.backend;
+
+    fetch(backend+'inf')
     .then(res => res.json())
     .then(
       (result) => {
@@ -49,7 +52,11 @@ class App extends Component {
         });
       },
       (error) => {
-        console.log(error)
+        this.setState({
+          horarioLocal: '',
+          fusoHorario: '',
+          area: ''
+        });
       }
     )
 
@@ -69,14 +76,14 @@ class App extends Component {
 
     const layerTrueColor = new ImageLayer({          
       source: new Static({
-        url: 'http://127.0.0.1:5000/static/true_color_4326.jpg',
+        url: backend+'static/true_color_4326.jpg',
         imageExtent: [-45.814160325, -10.643552509, -45.762978777, -10.575508911]            
       })
     });
 
     const layerNdvi = new ImageLayer({          
       source: new Static({
-        url: 'http://127.0.0.1:5000/static/ndvi_4326.jpg',
+        url: backend+'static/ndvi_4326.jpg',
         imageExtent: [-45.814160325, -10.643552509, -45.762978777, -10.575508911]            
       })
     });
@@ -113,14 +120,21 @@ class App extends Component {
       source.addFeature(feature);   
       const labelPontoSelecionado = point.getCoordinates().toString();
       me.setState({labelPontoSelecionado:labelPontoSelecionado});
-      const url = 'http://127.0.0.1:5000/ndvi?param='+labelPontoSelecionado;
+      
+      const url = backend+'ndvi?param='+labelPontoSelecionado;
       fetch(url)
       .then(res => res.json())
       .then(
         (result) => {
-          me.setState({
-            labelNdvi: result
-          });
+          if(result.success){
+            me.setState({
+              labelNdvi: result.ndvi
+            });
+          }else{
+            me.setState({
+              labelNdvi: undefined
+            });
+          }
         },
         (error) => {
           me.setState({
@@ -128,9 +142,6 @@ class App extends Component {
           });
         }
       )
-
-
-
     });
 
     this.setState({
@@ -182,7 +193,10 @@ class App extends Component {
               <div><p><input type="checkbox" onChange={this.handleCheckNdvi} defaultChecked={this.state.checkedNdvi}/>NDVI</p></div>
               <div><p><input type="checkbox" onChange={this.handleCheckTrueColor} defaultChecked={this.state.checkedTrueColor}/>True Color</p></div>
             </div>
-            <div className="column">Histograma de NDVI</div>
+            <div className="column">
+              <p>Histograma de NDVI</p>
+              <img src={this.state.histograma} width="60px" height="40px" />
+            </div>
             <div className="column">
               <p>Informações da cena</p>
               <p>Fuso Horário : {this.state.fusoHorario}</p>
